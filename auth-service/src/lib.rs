@@ -26,7 +26,7 @@ impl Application {
             .route("/login", post(login))
             .route("/logout", post(logout))
             .route("/signup", post(signup))
-            .route("/verify-2fa", get(verify_2fa))
+            .route("/verify-2fa", post(verify_2fa))
             .route("/verify-token", post(verify_token));
 
         let listener = tokio::net::TcpListener::bind(address).await?;

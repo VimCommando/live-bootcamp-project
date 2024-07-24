@@ -58,9 +58,9 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub async fn get_verify_2fa(&self) -> reqwest::Response {
+    pub async fn post_verify_2fa(&self) -> reqwest::Response {
         self.http_client
-            .get(&format!("{}/verify-2fa", &self.address))
+            .post(&format!("{}/verify-2fa", &self.address))
             .send()
             .await
             .expect("Failed to execute request.")
