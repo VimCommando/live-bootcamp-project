@@ -1,4 +1,6 @@
+mod domain;
 mod routes;
+mod services;
 
 use axum::{routing::post, serve::Serve, Router};
 use routes::*;
