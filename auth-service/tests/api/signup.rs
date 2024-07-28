@@ -1,5 +1,6 @@
 use crate::helpers::{get_random_email, TestApp};
-use auth_service::routes::SignupResponse;
+use auth_service::{routes::SignupResponse, ErrorResponse};
+use serde_json::json;
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
@@ -9,15 +10,15 @@ async fn should_return_422_if_malformed_input() {
 
     // TODO: add more malformed input test cases
     let test_cases = [
-        serde_json::json!({
+        json!({
             "password": "password123",
             "requires2FA": true
         }),
-        serde_json::json!({
+        json!({
             "email": random_email,
             "requires2FA": true
         }),
-        serde_json::json!({
+        json!({
             "email": random_email,
             "password": "password123"
         }),
@@ -37,13 +38,13 @@ async fn should_return_422_if_malformed_input() {
 #[tokio::test]
 async fn should_return_201_if_valid_input() {
     let app = TestApp::new().await;
-    let user_json = serde_json::json!({
+    let user_json = json!({
         "email": "mreynolds@serenity.co",
         "password": "password",
         "requires2FA": false
     });
 
-    let response = app.post_signup(&user_json).await; // call `post_signup`
+    let response = app.post_signup(&user_json).await;
 
     assert_eq!(response.status().as_u16(), 201);
 
@@ -55,6 +56,85 @@ async fn should_return_201_if_valid_input() {
     assert_eq!(
         response
             .json::<SignupResponse>()
+            .await
+            .expect("Could not deserialize response body to UserBody"),
+        expected_response
+    );
+}
+
+#[tokio::test]
+async fn should_return_400_if_invalid_input() {
+    // The signup route should return a 400 HTTP status code if an invalid input is sent.
+    // The input is considered invalid if:
+    // - The email is empty or does not contain '@'
+    // - The password is less than 8 characters
+    let app = TestApp::new().await;
+    let invalid_signups = vec![
+        // No '@' in email
+        json!({
+            "email": "mreynolds_serenity.co",
+            "password": "password",
+            "requires2FA": false
+        }),
+        // Password is less than 8 characters
+        json!({
+            "email": "mreynolds@serenity.co",
+            "password": "pass",
+            "requires2FA": false
+        }),
+        // Empty email
+        json!({
+            "email": "",
+            "password": "password",
+            "requires2FA": false
+        }),
+    ];
+
+    for invalid_signup in invalid_signups.iter() {
+        let response = app.post_signup(&invalid_signup).await;
+        assert_eq!(response.status().as_u16(), 400);
+        let expected_response = ErrorResponse {
+            error: "Invalid credentials".to_string(),
+        };
+
+        // Assert that we are getting the correct error message
+        assert_eq!(
+            response
+                .json::<ErrorResponse>()
+                .await
+                .expect("Could not deserialize response body to UserBody"),
+            expected_response
+        );
+    }
+}
+
+#[tokio::test]
+async fn should_return_409_if_email_already_exists() {
+    let app = TestApp::new().await;
+    let user_json = json!({
+        "email": "mreynolds@serenity.co",
+        "password": "password",
+        "requires2FA": false
+    });
+
+    // Create user, ignoring the response
+    let response = app.post_signup(&user_json).await;
+    // It shoulld succeed
+    assert_eq!(response.status().as_u16(), 201);
+
+    // Attempt creating user again
+    let response = app.post_signup(&user_json).await;
+    // It should fail
+    assert_eq!(response.status().as_u16(), 409);
+
+    let expected_response = ErrorResponse {
+        error: "User already exists".to_string(),
+    };
+
+    // Assert that we are getting the correct error message
+    assert_eq!(
+        response
+            .json::<ErrorResponse>()
             .await
             .expect("Could not deserialize response body to UserBody"),
         expected_response
