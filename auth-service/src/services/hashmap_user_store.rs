@@ -1,21 +1,14 @@
-use crate::domain::User;
+use crate::domain::{User, UserStore, UserStoreError};
 use std::collections::HashMap;
-
-#[derive(Debug, PartialEq)]
-pub enum UserStoreError {
-    UserAlreadyExists,
-    UserNotFound,
-    InvalidCredentials,
-    UnexpectedError,
-}
 
 #[derive(Default)]
 pub struct HashmapUserStore {
     users: HashMap<String, User>,
 }
 
-impl HashmapUserStore {
-    pub fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
+#[async_trait::async_trait]
+impl UserStore for HashmapUserStore {
+    async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
         match self.users.get(&user.email) {
             Some(_) => Err(UserStoreError::UserAlreadyExists),
             None => {
@@ -25,14 +18,14 @@ impl HashmapUserStore {
         }
     }
 
-    pub fn get_user(&self, email: &str) -> Result<User, UserStoreError> {
+    async fn get_user(&self, email: &str) -> Result<User, UserStoreError> {
         match self.users.get(email) {
             Some(user) => Ok(user.clone()),
             None => Err(UserStoreError::UserNotFound),
         }
     }
 
-    pub fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
+    async fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
         match self.users.get(email) {
             Some(user) => {
                 if user.password == password {
@@ -61,11 +54,11 @@ mod tests {
         };
 
         // assert that the user was added
-        assert_eq!(user_store.add_user(user.clone()), Ok(()));
+        assert_eq!(user_store.add_user(user.clone()).await, Ok(()));
 
         // assert re-adding the same user the failes with an error
         assert_eq!(
-            user_store.add_user(user),
+            user_store.add_user(user).await,
             Err(UserStoreError::UserAlreadyExists)
         );
     }
@@ -79,11 +72,12 @@ mod tests {
             requires_2fa: false,
         };
         // add the user to the store
-        assert_eq!(user_store.add_user(user.clone()), Ok(()));
+        assert_eq!(user_store.add_user(user.clone()).await, Ok(()));
         // assert that the user can be retrieved
         assert_eq!(
             user_store
                 .get_user(&user.email)
+                .await
                 .expect("failed to get user"),
             user
         );
@@ -98,10 +92,10 @@ mod tests {
             requires_2fa: false,
         };
         // add the user to the store
-        assert_eq!(user_store.add_user(user.clone()), Ok(()));
+        assert_eq!(user_store.add_user(user.clone()).await, Ok(()));
         // assert that the user validates
         assert_eq!(
-            user_store.validate_user(&user.email, &user.password),
+            user_store.validate_user(&user.email, &user.password).await,
             Ok(())
         );
     }
