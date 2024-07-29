@@ -8,10 +8,9 @@ async fn should_return_422_if_malformed_input() {
 
     let random_email = get_random_email(); // Call helper method to generate email
 
-    // TODO: add more malformed input test cases
     let test_cases = [
         json!({
-            "password": "password123",
+            "password": "N0thingInTheverse!",
             "requires2FA": true
         }),
         json!({
@@ -20,7 +19,7 @@ async fn should_return_422_if_malformed_input() {
         }),
         json!({
             "email": random_email,
-            "password": "password123"
+            "password": "N0thingInTheverse!"
         }),
     ];
 
@@ -40,7 +39,7 @@ async fn should_return_201_if_valid_input() {
     let app = TestApp::new().await;
     let user_json = json!({
         "email": "mreynolds@serenity.co",
-        "password": "password",
+        "password": "N0thingInTheverse!",
         "requires2FA": false
     });
 
@@ -73,7 +72,7 @@ async fn should_return_400_if_invalid_input() {
         // No '@' in email
         json!({
             "email": "mreynolds_serenity.co",
-            "password": "password",
+            "password": "N0thingInTheverse!",
             "requires2FA": false
         }),
         // Password is less than 8 characters
@@ -85,7 +84,7 @@ async fn should_return_400_if_invalid_input() {
         // Empty email
         json!({
             "email": "",
-            "password": "password",
+            "password": "N0thingInTheverse!",
             "requires2FA": false
         }),
     ];
@@ -113,7 +112,7 @@ async fn should_return_409_if_email_already_exists() {
     let app = TestApp::new().await;
     let user_json = json!({
         "email": "mreynolds@serenity.co",
-        "password": "password",
+        "password": "N0thingInTheverse!",
         "requires2FA": false
     });
 
