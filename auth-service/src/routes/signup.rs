@@ -1,5 +1,5 @@
 use crate::app_state::AppState;
-use crate::domain::{AuthAPIError, Email, Password, User, UserStore, UserStoreError};
+use crate::domain::{AuthAPIError, Email, Password, User, UserStoreError};
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 

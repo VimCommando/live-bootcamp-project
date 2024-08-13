@@ -1,11 +1,11 @@
-mod app_state;
-mod domain;
+pub mod app_state;
+pub mod domain;
 pub mod routes;
 mod services;
 pub mod utils;
 
-pub use app_state::AppState;
-pub use services::HashmapUserStore;
+use app_state::AppState;
+pub use services::{HashmapUserStore, HashsetBannedTokenStore};
 
 use axum::{
     http::{Method, StatusCode},

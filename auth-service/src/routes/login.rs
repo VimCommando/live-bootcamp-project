@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    domain::{AuthAPIError, Email, Password, UserStore, UserStoreError},
+    domain::{AuthAPIError, Email, Password, UserStoreError},
     utils::auth::generate_auth_cookie,
 };
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
@@ -11,40 +11,34 @@ pub async fn login(
     State(state): State<AppState>,
     jar: CookieJar,
     Json(request): Json<LoginRequest>,
-) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
-    let email = match Email::parse(&request.email) {
-        Ok(email) => email,
-        Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
-    };
-
-    let password = match Password::parse(&request.password) {
-        Ok(password) => password,
-        Err(_) => return (jar, Err(AuthAPIError::InvalidCredentials)),
-    };
+) -> Result<(CookieJar, impl IntoResponse), AuthAPIError> {
+    let email = Email::parse(&request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let password =
+        Password::parse(&request.password).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     let user_store = state.user_store.read().await;
-    match user_store.validate_user(&email, &password).await {
-        Ok(_) => (),
-        Err(UserStoreError::UserNotFound) => return (jar, Err(AuthAPIError::IncorrectCredentials)),
-        Err(UserStoreError::InvalidCredentials) => {
-            return (jar, Err(AuthAPIError::IncorrectCredentials))
-        }
-        Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
-    };
 
-    let user = match user_store.get_user(&email).await {
-        Ok(user) => user,
-        Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
-    };
+    user_store
+        .validate_user(&email, &password)
+        .await
+        .map_err(|e| match e {
+            UserStoreError::UserNotFound => AuthAPIError::IncorrectCredentials,
+            UserStoreError::InvalidCredentials => AuthAPIError::IncorrectCredentials,
+            _ => AuthAPIError::UnexpectedError,
+        })?;
 
-    let auth_cookie = match generate_auth_cookie(&user.email) {
-        Ok(cookie) => cookie,
-        Err(_) => return (jar, Err(AuthAPIError::UnexpectedError)),
-    };
+    let user = user_store.get_user(&email).await.map_err(|e| match e {
+        UserStoreError::UserNotFound => AuthAPIError::IncorrectCredentials,
+        UserStoreError::InvalidCredentials => AuthAPIError::IncorrectCredentials,
+        _ => AuthAPIError::UnexpectedError,
+    })?;
+
+    let auth_cookie =
+        generate_auth_cookie(&user.email).map_err(|_| AuthAPIError::UnexpectedError)?;
 
     let updated_jar = jar.add(auth_cookie);
 
-    (updated_jar, Ok(StatusCode::OK.into_response()))
+    Ok((updated_jar, StatusCode::OK.into_response()))
 }
 
 #[derive(Deserialize)]
