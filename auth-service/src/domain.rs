@@ -1,5 +1,5 @@
-mod data_stores;
-mod email;
+pub mod data_stores;
+pub mod email;
 mod error;
 mod password;
 mod user;

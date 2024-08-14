@@ -1,7 +1,8 @@
 use super::UserStoreError;
+use serde::Serialize;
 use validator::ValidateEmail;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize)]
 pub struct Email(String);
 
 impl Email {
