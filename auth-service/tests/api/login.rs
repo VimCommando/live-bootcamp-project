@@ -1,6 +1,6 @@
 use crate::helpers::{get_random_email, TestApp};
 use auth_service::{
-    domain::{Email, LoginAttemptId, TwoFACodeStore},
+    domain::{Email, LoginAttemptId},
     routes::TwoFactorAuthResponse,
     utils::constants::JWT_COOKIE_NAME,
 };
@@ -71,7 +71,6 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
 
     assert_eq!(json_body.message, "2FA required".to_owned());
 
-    // TODO: assert that `json_body.login_attempt_id` is stored inside `app.two_fa_code_store`
     let (login_attempt_id, _) = app
         .two_fa_code_store
         .read()
@@ -81,7 +80,7 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
         .unwrap();
 
     assert_eq!(
-        LoginAttemptId::parse(json_body.login_attempt_id).unwrap(),
+        LoginAttemptId::parse(&json_body.login_attempt_id).unwrap(),
         login_attempt_id
     );
 }

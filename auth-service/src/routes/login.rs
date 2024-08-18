@@ -1,7 +1,7 @@
 use crate::{
-    app_state::AppState,
     domain::{AuthAPIError, Email, LoginAttemptId, Password, TwoFACode, UserStoreError},
     utils::auth::generate_auth_cookie,
+    AppState,
 };
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use axum_extra::extract::CookieJar;
@@ -29,7 +29,6 @@ pub async fn login(
 
     let user = user_store.get_user(&email).await.map_err(|e| match e {
         UserStoreError::UserNotFound => AuthAPIError::IncorrectCredentials,
-        UserStoreError::InvalidCredentials => AuthAPIError::IncorrectCredentials,
         _ => AuthAPIError::UnexpectedError,
     })?;
 
@@ -67,7 +66,16 @@ async fn handle_2fa(
         .await
         .map_err(|_| AuthAPIError::UnexpectedError)?;
 
-    // Finally, we need to return the login attempt ID to the client
+    state
+        .email_client
+        .send_email(
+            &email,
+            "Your Login Authentication Code",
+            two_fa_code.as_ref(),
+        )
+        .await
+        .map_err(|_| AuthAPIError::UnexpectedError)?;
+
     let auth_response = TwoFactorAuthResponse {
         message: "2FA required".to_string(),
         login_attempt_id: login_attempt_id.to_string(),
@@ -81,7 +89,7 @@ async fn handle_2fa(
 }
 
 async fn handle_no_2fa(
-    email: &Email,
+    _email: &Email,
     jar: CookieJar,
 ) -> Result<(CookieJar, (StatusCode, Json<LoginResponse>)), AuthAPIError> {
     let response = (StatusCode::OK, Json(LoginResponse::RegularAuth));

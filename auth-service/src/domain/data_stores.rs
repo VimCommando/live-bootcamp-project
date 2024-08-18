@@ -55,13 +55,13 @@ pub enum TwoFACodeStoreError {
     UnexpectedError,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct LoginAttemptId(String);
 
 impl LoginAttemptId {
-    pub fn parse(id: String) -> Result<Self, String> {
+    pub fn parse(id: &str) -> Result<Self, String> {
         match Uuid::parse_str(&id) {
-            Ok(_) => Ok(LoginAttemptId(id)),
+            Ok(_) => Ok(LoginAttemptId(id.to_string())),
             Err(_) => Err("Invalid UUID".to_string()),
         }
     }
@@ -85,7 +85,7 @@ impl AsRef<str> for LoginAttemptId {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct TwoFACode(String);
 
 impl TwoFACode {

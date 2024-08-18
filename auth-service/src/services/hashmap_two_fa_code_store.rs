@@ -50,7 +50,7 @@ mod tests {
     async fn test_add_code() {
         let mut store = HashmapTwoFACodeStore::default();
         let email = Email::parse("test@example.com").unwrap();
-        let login_attempt_id = LoginAttemptId::parse(Uuid::new_v4().to_string()).unwrap();
+        let login_attempt_id = LoginAttemptId::parse(&Uuid::new_v4().to_string()).unwrap();
         let code = TwoFACode::parse("123456").unwrap();
 
         assert!(store
@@ -63,7 +63,7 @@ mod tests {
     async fn test_get_code() {
         let mut store = HashmapTwoFACodeStore::default();
         let email = Email::parse("test@example.com").unwrap();
-        let login_attempt_id = LoginAttemptId::parse(Uuid::new_v4().to_string()).unwrap();
+        let login_attempt_id = LoginAttemptId::parse(&Uuid::new_v4().to_string()).unwrap();
         let code = TwoFACode::parse("123456").unwrap();
 
         assert!(store
@@ -79,7 +79,7 @@ mod tests {
     async fn test_remove_code() {
         let mut store = HashmapTwoFACodeStore::default();
         let email = Email::parse("test@example.com").unwrap();
-        let login_attempt_id = LoginAttemptId::parse(Uuid::new_v4().to_string()).unwrap();
+        let login_attempt_id = LoginAttemptId::parse(&Uuid::new_v4().to_string()).unwrap();
         let code = TwoFACode::parse("123456").unwrap();
 
         assert!(store
