@@ -1,10 +1,8 @@
 use auth_service::{
     app_state::{AppState, BannedTokenStoreType, TwoFACodeStoreType},
-    get_postgres_pool,
-    services::{
-        HashmapTwoFACodeStore, HashsetBannedTokenStore, MockEmailClient, PostgresUserStore,
-    },
-    utils::constants::{test, DATABASE_URL},
+    get_postgres_pool, get_redis_client,
+    services::{HashmapTwoFACodeStore, MockEmailClient, PostgresUserStore, RedisBannedTokenStore},
+    utils::constants::{test, DATABASE_URL, REDIS_HOST_NAME},
     Application,
 };
 use reqwest::cookie::Jar;
@@ -28,7 +26,8 @@ pub struct TestApp {
 
 impl TestApp {
     pub async fn new() -> Self {
-        let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
+        let redis_conn = Arc::new(RwLock::new(configure_redis()));
+        let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore::new(redis_conn)));
         let mock_email_client = Arc::new(MockEmailClient::default());
         let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
         let (pg_pool, db_name) = configure_postgresql().await;
@@ -165,6 +164,13 @@ async fn configure_postgresql() -> (PgPool, String) {
         .expect("Failed to create Postgres connection pool!");
 
     (pg_pool, db_name)
+}
+
+fn configure_redis() -> redis::Connection {
+    get_redis_client(REDIS_HOST_NAME.to_owned())
+        .expect("Failed to get Redis client")
+        .get_connection()
+        .expect("Failed to get Redis connection")
 }
 
 async fn configure_database(db_conn_string: &str, db_name: &str) {
