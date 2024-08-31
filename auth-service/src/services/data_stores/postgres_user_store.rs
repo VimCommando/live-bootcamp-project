@@ -5,7 +5,7 @@ use argon2::{
     PasswordVerifier, Version,
 };
 
-use sqlx::{postgres::PgDatabaseError, PgPool, Row};
+use sqlx::{PgPool, Row};
 
 use crate::domain::{
     data_stores::{UserStore, UserStoreError},
